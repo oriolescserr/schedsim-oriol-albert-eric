@@ -87,7 +87,59 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
         procTable[p].completed = false;
     }
 
+    Process* current = NULL;
+    
+    for (int t = 0; t < duration; t++) {
+        for (int p = 0; p < nprocs; p++) {
+            if (procTable[p].arrive_time == t) {
+                enqueue(&procTable[p]);
+            }
+        }
+        
+        if (current != NULL && getCurrentBurst(current, t) >= current->burst) {
+            current->completed = true;
+            current->return_time = t - current->arrive_time;
+            current->lifecycle[t] = Finished;
+            current = NULL;
+        }
+        
+        if (current == NULL && get_queue_size() > 0) {
+            if (algorithm == SJF) {
+                _proclist = transformQueueToList();
+                qsort(_proclist, get_queue_size(), sizeof(Process), compareBurst);
+                setQueueFromList(_proclist);
+                free(_proclist);
+            } else if (algorithm == PRIORITIES) {
+                _proclist = transformQueueToList();
+                qsort(_proclist, get_queue_size(), sizeof(Process), comparePriority);
+                setQueueFromList(_proclist);
+                free(_proclist);
+            }
+            // El FCFS no cal reordenar
+            current = dequeue();
+            
+            if (getCurrentBurst(current, t) == 0) {
+                current->response_time = t - current->arrive_time;
+            }
+        }
+        
+        if (current != NULL) {
+            current->lifecycle[t] = Running;
+        }
+        
+        if (get_queue_size() > 0) {
+            _proclist = transformQueueToList();
+            for (int i = 0; i < get_queue_size(); i++) {
+                _proclist[i].waiting_time++;
+            }
+            setQueueFromList(_proclist);
+            free(_proclist);
+        }
+    }
+
     printSimulation(nprocs,procTable,duration);
+    printf("\n");
+    printMetrics(duration, nprocs, procTable);
 
     for (int p=0; p<nprocs; p++ ){
         destroyProcess(procTable[p]);
