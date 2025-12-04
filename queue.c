@@ -42,6 +42,10 @@ Process* dequeue(){
     }
 }
 
+Process* peek(){
+    return queue[0];
+}
+
 void cleanQueue(){
     free(queue);
 }
