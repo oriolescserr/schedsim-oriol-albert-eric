@@ -20,6 +20,7 @@ int num_modalities(void);
 
 size_t initFromCSVFile(char* filename, Process** procTable);
 
+bool isBetter(Process *process1, Process *process2, int algorithm, int t);
 int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modality, int quantum);
 void printMetrics(size_t simulationCPUTime, size_t nprocs, Process *procTable );
 void printSimulation(size_t nprocs, Process *procTable, size_t duration);

@@ -67,6 +67,15 @@ int getCurrentBurst(Process* proc, int current_time){
     return burst;
 }
 
+bool isBetter(Process *process1, Process *process2, int algorithm, int t) {
+    if (algorithm == SJF) {
+        return (process1->burst - getCurrentBurst(process1, t)) < (process2->burst - getCurrentBurst(process2, t));
+    } else if (algorithm == PRIORITIES) {
+        return process1->priority < process2->priority;
+    }
+    return false;
+}
+
 int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modality, int quantum){
 
     Process * _proclist;
@@ -103,7 +112,7 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
             current = NULL;
         }
         
-        if (current == NULL && get_queue_size() > 0) {
+        if (get_queue_size() > 0) {
             if (algorithm == SJF) {
                 _proclist = transformQueueToList();
                 qsort(_proclist, get_queue_size(), sizeof(Process), compareBurst);
@@ -115,8 +124,22 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
                 setQueueFromList(_proclist);
                 free(_proclist);
             }
-            // El FCFS no cal reordenar
-            current = dequeue();
+
+            if (modality == PREEMPTIVE) {
+                if (current == NULL) {
+                    current = dequeue();
+                } else {
+                    Process *best = peek(); // Mira el següent a sortir (funció creada per nosaltres)
+                    if (isBetter(best, current, algorithm, t)) {
+                        enqueue(current);
+                        current = dequeue();
+                    }
+                }
+            } else if (modality == NONPREEMPTIVE) {
+                if (current == NULL) {
+                    current = dequeue();
+                }
+            }
             
             if (getCurrentBurst(current, t) == 0) {
                 current->response_time = t - current->arrive_time;
@@ -136,6 +159,13 @@ int run_dispatcher(Process *procTable, size_t nprocs, int algorithm, int modalit
             free(_proclist);
         }
     }
+
+    qsort(procTable,nprocs,sizeof(Process),compareArrival);
+    printf("== PROCESSES ==\n");
+    for (int p = 0; p < nprocs; p++) {
+        printProcess(procTable[p]);
+    }
+    printf("\n");
 
     printSimulation(nprocs,procTable,duration);
     printf("\n");
