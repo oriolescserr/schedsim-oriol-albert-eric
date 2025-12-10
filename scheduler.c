@@ -57,6 +57,16 @@ size_t getTotalCPU(Process *procTable, size_t nprocs){
     return total;
 }
 
+int getCurrentBurst(Process* proc, int current_time){
+    int burst = 0;
+    for(int t=0; t<current_time; t++){
+        if(proc->lifecycle[t] == Running){
+            burst++;
+        }
+    }
+    return burst;
+}
+
 bool isBetter(Process *process1, Process *process2, int algorithm, int t) {
     if (algorithm == SJF) {
         return compareBurst(process1, process2) < 0;
